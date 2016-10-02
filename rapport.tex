@@ -64,9 +64,25 @@
 \section{Introduction}
 
 \subsection{Motivation}
+Lors du dernier TP sur la mise en correspondance stéréoscopique, nous avons utilisé une méthode de stéréoscopie dite "éparse". Celle-ci consistait en l'utilisation d'une sélection de points pour la mise en correspondance entre 2 images. Ce qui nous permettait de retrouver des informations de profondeur grâce à 2 projections de la même scène, avec des points de vues différents.\\
 
+Nous allons ici mettre en œuvre une méthode de mise en correspondance stéréoscopique dense. C'est-à-dire que nous allons utiliser tous les pixels d'une projection, et non une sélection de points, afin de calculer la disparité entre l'image gauche et l'image droite.
 
 \subsection{La stéréovision dense}
+
+Le but de cette méthode est de créer une carte de disparité entre chaque pixel de deux projections. La disparité correspond à la différence d'abscisse entre deux points considérés comme homologues pour les deux images.\\
+
+Pour simplifier les calculs, nous allons utiliser une configuration de stéréoscope canonique. C'est une configuration dans laquelle :
+\begin{itemize}
+\item les deux caméras sont identiques ;
+\item les axes optiques sont parallèles ;
+\item les deux capteurs d’image sont coplanaires ;
+\item les lignes horizontales des capteurs sont confondues.
+\end{itemize}
+
+Cette configuration possède plusieurs avantage qui nous soulagent de certaines étapes d'estimations ou de réctifications (ex. réctification épipolaire). C'est pour cette raison que nous allons utiliser une méthode de stéréovision dense, avec des images issues d'un stéréoscope canonique.
+
+\end{itemize}
 
 \clearpage
 %----------------------------------------------------------------------------------------
