@@ -77,19 +77,126 @@ Pour simplifier les calculs, nous allons utiliser une configuration de stéréos
 \item les deux caméras sont identiques ;
 \item les axes optiques sont parallèles ;
 \item les deux capteurs d’image sont coplanaires ;
-\item les lignes horizontales des capteurs sont confondues.
+\item les lignes horizontales des capteurs sont confondues.\\
 \end{itemize}
 
-Cette configuration possède plusieurs avantage qui nous soulagent de certaines étapes d'estimations ou de réctifications (ex. réctification épipolaire). C'est pour cette raison que nous allons utiliser une méthode de stéréovision dense, avec des images issues d'un stéréoscope canonique.
+Cette configuration possède plusieurs avantage qui nous soulagent de certaines étapes d'estimations ou de réctifications (ex. réctification épipolaire). C'est pour cette raison que nous allons utiliser une méthode de stéréovision dense, avec des images issues d'un stéréoscope canonique.\\
 
-\end{itemize}
+Nous allons utiliser cette méthode sur ces deux images en niveau de gris.
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=170px]{left.png}
+\includegraphics[width=170px]{right.png}
+\end{center}
+\caption{Image gauche et Image droite}
+\end{figure}
 
 \clearpage
 %----------------------------------------------------------------------------------------
-%	TODO
+%	SIMILARITÉ PAR SSD
 %----------------------------------------------------------------------------------------
 
-\section{TODO}
+\section{Calcul de l'image de disparité gauche}
+
+Pour calculer l'image de disparité relative aux points de l'image de gauche, nous devons suivre plusieurs étapes.
+
+\subsection{Image intermédiaire minSSD}
+
+Cette étape consiste à calculer l'image intermédiaire minSSD. Cette matrice est de la même taille que l'image de gauche donnée en paramètre.
+Chaque élément de cette matrice se verra assigner la valeur $dMinSSD = (2 * iWindowHalfSize + 12 * iWindowHalfSize + 1)^2 * 512.0$, qui correspond au maximum possible de SSD (sum of squared differences).
+
+\begin{lstlisting}
+Mat iviLeftDisparityMap(const Mat& mLeftGray,
+                        const Mat& mRightGray,
+                        int iMaxDisparity,
+                        int iWindowHalfSize) {
+  [...]
+
+  Mat mMinSSD(mLeftGray.size(), CV_64F);
+
+  [...]
+
+  // Initialisation de l'image du minimum de SSD
+  dMinSSD = pow((double)(2 * iWindowHalfSize + 1), 2.0) * 512.0;
+  for (iRow = iWindowHalfSize;
+      iRow < mMinSSD.size().height - iWindowHalfSize;
+      iRow++) {
+      // Pointeur sur le debut de la ligne
+      pdPtr1 = mMinSSD.ptr<double>(iRow);
+      // Sauter la demi fenetre non utilisee
+      pdPtr1 += iWindowHalfSize;
+      // Remplir le reste de la ligne
+      for (iCol = iWindowHalfSize;
+          iCol < mMinSSD.size().width - iWindowHalfSize;
+          iCol++)
+              *pdPtr1++ = dMinSSD;
+  }
+
+  [...]
+
+}
+\end{lstlisting}
+
+Nous avons donc les valeurs de SSD maximales dans cette matrice, valeurs que nous tenterons de réduire dans la partie suivante, en cherchant la SSD minimale pour chaque point.
+
+\subsection{Image intermédiaire mSSD}
+
+Maintenant que nous avons cette base des SSD maximum, nous pouvons calculer les vraies SSD, qui seront stockées temporairement dans la matrice mSSD.
+Le but est de calculer la SSD minimale de chaque point en se servant des pixels de la même ligne. Le résultat obtenu sera stocké dans la matrice mSSD. Si le résultat est inférieur à la SSD minimale (contenue dans mMinSSD), alors celui-ci viendra y remplacer l'ancienne valeur.
+
+La SSD est calculée dans iviComputeLeftSSDCost, méthode que nous implémenterons par la suite.
+
+\begin{lstlisting}
+Mat iviLeftDisparityMap(const Mat& mLeftGray,
+                        const Mat& mRightGray,
+                        int iMaxDisparity,
+                        int iWindowHalfSize) {
+  [...]
+
+  Mat mSSD(mLeftGray.size(), CV_64F);
+
+  [...]
+
+    // Boucler pour tous les decalages possibles
+    for (iShift = 0; iShift < iMaxDisparity; iShift++) {
+        // Calculer le cout SSD pour ce decalage
+        mSSD = iviComputeLeftSSDCost(mLeftGray, mRightGray,
+                                     iShift, iWindowHalfSize);
+        // Mettre a jour les valeurs minimales
+        for (iRow = iWindowHalfSize;
+            iRow < mMinSSD.size().height - iWindowHalfSize;
+            iRow++) {
+            // Pointeurs vers les debuts des lignes
+            pdPtr1 = mMinSSD.ptr<double>(iRow);
+            pdPtr2 = mSSD.ptr<double>(iRow);
+            pucDisparity = mLeftDisparityMap.ptr<unsigned char>(iRow);
+            // Sauter la demi fenetre non utilisee
+            pdPtr1 += iWindowHalfSize;
+            pdPtr2 += iWindowHalfSize;
+            pucDisparity += iWindowHalfSize;
+            // Comparer sur le reste de la ligne
+            for (iCol = iWindowHalfSize;
+                iCol < mMinSSD.size().width - iWindowHalfSize;
+                iCol++) {
+                // SSD plus faible que le minimum precedent
+                if (*pdPtr1 > *pdPtr2) {
+                    *pucDisparity = (unsigned char)iShift;
+                    *pdPtr1 = *pdPtr2;
+                }
+                // Pixels suivants
+                pdPtr1++; pdPtr2++; pucDisparity++;
+            }
+        }
+    }
+
+  [...]
+
+}
+\end{lstlisting}
+
+\subsection{Calcul de la SSD pour l'image gauche}
+
+
 
 \clearpage
 %----------------------------------------------------------------------------------------
