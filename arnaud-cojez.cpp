@@ -255,6 +255,7 @@ Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
          int xr = xl - (double) mLeftDisparity.at<unsigned char>(y,xl);
          if((double) mLeftDisparity.at<unsigned char>(y, xl) == (double) mRightDisparity.at<unsigned char>(y,xl - (double) mLeftDisparity.at<unsigned char>(y, xl))) {
            mValidityMask.at<unsigned char>(y, xl) = 0;
+           mDisparity.at<unsigned char>(y, xl) = (double) mLeftDisparity.at<unsigned char>(y, xl);
          } else {
            mValidityMask.at<unsigned char>(y, xl) = 255;
          }
