@@ -114,8 +114,22 @@ Mat iviComputeLeftSSDCost(const Mat& mLeftGray,
                           const Mat& mRightGray,
                           int iShift,
                           int iWindowHalfSize) {
-Mat mLeftSSDCost(mLeftGray.size(), CV_64F);
-    // A completer!
+    Mat mLeftSSDCost(mLeftGray.size(), CV_64F);
+
+    for(int x = 0; x < mLeftGray.cols - iWindowHalfSize; x++) {
+      for(int y = 0; y < mLeftGray.rows - iWindowHalfSize; y++) {
+        double diff_sum = 0.;
+
+        for(int i = -iWindowHalfSize; i < iWindowHalfSize; i++) {
+          for(int j = -iWindowHalfSize; j < iWindowHalfSize; j++) {
+            double diff = ((double) mLeftGray.at<unsigned char>(y + j, x + i) - (double) mRightGray.at<unsigned char>(y + j, x + i - iShift));
+            diff_sum += pow(diff, 2.);
+          }
+        }
+        mLeftSSDCost.at<double>(y, x) = diff_sum;
+
+      }
+    }
     return mLeftSSDCost;
 }
 
