@@ -249,7 +249,16 @@ Mat iviComputeRightSSDCost(const Mat& mLeftGray,
 Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
                             const Mat& mRightDisparity,
                             Mat& mValidityMask) {
-Mat mDisparity(mLeftDisparity.size(), CV_8U);
-    // A completer!
+    Mat mDisparity(mLeftDisparity.size(), CV_8U);
+    for(int xl = 0; xl < mLeftDisparity.cols; xl++) {
+      for (int y = 0; y < mLeftDisparity.rows; y++) {
+         int xr = xl - (double) mLeftDisparity.at<unsigned char>(y,xl);
+         if((double) mLeftDisparity.at<unsigned char>(y, xl) == (double) mRightDisparity.at<unsigned char>(y,xl - (double) mLeftDisparity.at<unsigned char>(y, xl))) {
+           mValidityMask.at<unsigned char>(y, xl) = 0;
+         } else {
+           mValidityMask.at<unsigned char>(y, xl) = 255;
+         }
+      }
+    }
     return mDisparity;
 }
