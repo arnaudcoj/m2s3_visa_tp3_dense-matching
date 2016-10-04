@@ -144,7 +144,7 @@ Nous avons donc les valeurs de SSD maximales dans cette matrice, valeurs que nou
 Maintenant que nous avons cette base des SSD maximum, nous pouvons calculer les vraies SSD, qui seront stockées temporairement dans la matrice mSSD.
 Le but est de calculer la SSD minimale de chaque point en se servant des pixels de la même ligne. Le résultat obtenu sera stocké dans la matrice mSSD. Si le résultat est inférieur à la SSD minimale (contenue dans mMinSSD), alors celui-ci viendra y remplacer l'ancienne valeur.
 
-La SSD est calculée dans iviComputeLeftSSDCost, méthode que nous implémenterons par la suite.
+La SSD est calculée dans iviComputeLeftSSDCost, méthode que nous implémenterons dans la sous-partie suivante.
 
 \begin{lstlisting}
 Mat iviLeftDisparityMap(const Mat& mLeftGray,
@@ -196,13 +196,57 @@ Mat iviLeftDisparityMap(const Mat& mLeftGray,
 
 \subsection{Calcul de la SSD pour l'image gauche}
 
+\subsubsection{Explications}
+Pour calculer la SSD, nous allons utiliser cette formule, trouvée dans le cours :
 \begin{equation}
 \sum_{i=-w_x}^{w_x} \sum_{i=-w_y}^{w_y} (I_l(x_l+i,y+j)-I_r(x_l+1-s,y+j))^2
 \end{equation}
 
+\subsubsection{Implémentation C++}
 \begin{lstlisting}
-  
+// -----------------------------------------------------------------------
+/// \brief Calcule la somme des differences aux carre, image gauche
+/// prise comme reference.
+///
+/// @param psLeftImage: image gauche
+/// @param psRightImage: image droite
+/// @param iShift: decalage teste
+/// @param iWindowHalfSize: demi-taille de la fenetre de correlation
+/// @return somme des differences au carre pour chaque x,y
+// -----------------------------------------------------------------------
+Mat iviComputeLeftSSDCost(const Mat& mLeftGray,
+                          const Mat& mRightGray,
+                          int iShift,
+                          int iWindowHalfSize) {
+    Mat mLeftSSDCost(mLeftGray.size(), CV_64F);
+
+    for(int x = 0; x < mLeftGray.cols - iWindowHalfSize; x++) {
+      for(int y = 0; y < mLeftGray.rows - iWindowHalfSize; y++) {
+        double diff_sum = 0.;
+
+        for(int i = -iWindowHalfSize; i < iWindowHalfSize; i++) {
+          for(int j = -iWindowHalfSize; j < iWindowHalfSize; j++) {
+            double diff = ((double) mLeftGray.at<unsigned char>(y + j, x + i) - (double) mRightGray.at<unsigned char>(y + j, x + i - iShift));
+            diff_sum += pow(diff, 2.);
+          }
+        }
+        mLeftSSDCost.at<double>(y, x) = diff_sum;
+
+      }
+    }
+    return mLeftSSDCost;
+}
 \end{lstlisting}
+
+L'éxecution du programme nous donne comme résultat l'image de disparité suivante :
+\begin{figure}[h]
+\begin{center}
+	\includegraphics[width=200px]{left-disparity.png}
+\end{center}
+\caption{Image de disparité gauche}
+\end{figure}
+On retrouve certaines formes présente dans l'image source, telles que la lampe et le visage.
+
 \clearpage
 %----------------------------------------------------------------------------------------
 

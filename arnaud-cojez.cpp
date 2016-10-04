@@ -105,10 +105,9 @@ int iShift, iRow, iCol;
 ///
 /// @param psLeftImage: image gauche
 /// @param psRightImage: image droite
-/// @param psSSD: somme des differences au carre (double 64bits)
 /// @param iShift: decalage teste
 /// @param iWindowHalfSize: demi-taille de la fenetre de correlation
-/// @return rien
+/// @return somme des differences au carre pour chaque x,y
 // -----------------------------------------------------------------------
 Mat iviComputeLeftSSDCost(const Mat& mLeftGray,
                           const Mat& mRightGray,
