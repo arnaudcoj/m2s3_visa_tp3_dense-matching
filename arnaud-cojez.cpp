@@ -172,7 +172,7 @@ int iShift, iRow, iCol;
     // Boucler pour tous les decalages possibles
     for (iShift = 0; iShift < iMaxDisparity; iShift++) {
         // Calculer le cout SSD pour ce decalage
-        mSSD = iviComputeRightSSDCost(mRightGray, mLeftGray,
+        mSSD = iviComputeRightSSDCost(mLeftGray, mRightGray,
                                      iShift, iWindowHalfSize);
         // Mettre a jour les valeurs minimales
         for (iRow = iWindowHalfSize;
@@ -226,7 +226,7 @@ Mat iviComputeRightSSDCost(const Mat& mLeftGray,
 
         for(int i = -iWindowHalfSize; i < iWindowHalfSize; i++) {
           for(int j = -iWindowHalfSize; j < iWindowHalfSize; j++) {
-            double diff = ((double) mRightGray.at<unsigned char>(y + j, x + i) - (double) mLeftGray.at<unsigned char>(y + j, x + i - iShift));
+            double diff = ((double) mRightGray.at<unsigned char>(y + j, x + i) - (double) mLeftGray.at<unsigned char>(y + j, x + i + iShift));
             diff_sum += pow(diff, 2.);
           }
         }
