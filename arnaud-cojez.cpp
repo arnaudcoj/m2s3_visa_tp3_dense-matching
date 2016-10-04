@@ -249,16 +249,24 @@ Mat iviComputeRightSSDCost(const Mat& mLeftGray,
 Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
                             const Mat& mRightDisparity,
                             Mat& mValidityMask) {
+
     Mat mDisparity(mLeftDisparity.size(), CV_8U);
-    for(int xl = 0; xl < mLeftDisparity.cols; xl++) {
+
+    for(int x = 0; x < mLeftDisparity.cols; x++) {
       for (int y = 0; y < mLeftDisparity.rows; y++) {
-         int xr = xl - (double) mLeftDisparity.at<unsigned char>(y,xl);
-         if((double) mLeftDisparity.at<unsigned char>(y, xl) == (double) mRightDisparity.at<unsigned char>(y,xl - (double) mLeftDisparity.at<unsigned char>(y, xl))) {
-           mValidityMask.at<unsigned char>(y, xl) = 0;
-           mDisparity.at<unsigned char>(y, xl) = (double) mLeftDisparity.at<unsigned char>(y, xl);
-         } else {
-           mValidityMask.at<unsigned char>(y, xl) = 255;
-         }
+        double dl = (double) mLeftDisparity.at<unsigned char>(y, x);
+        double dr = (double) mRightDisparity.at<unsigned char>(y, x);
+
+        double dlStep = (double) mLeftDisparity.at<unsigned char>(y, x + dr);
+        double drStep = (double) mRightDisparity.at<unsigned char>(y, x - dl);
+
+        if(dl == drStep && dr == dlStep) {
+          mValidityMask.at<unsigned char>(y, x) = 0;
+          mDisparity.at<unsigned char>(y, x) = (double) mLeftDisparity.at<unsigned char>(y, x);
+        } else {
+          mValidityMask.at<unsigned char>(y, x) = 255;
+          mDisparity.at<unsigned char>(y,x) = 0;
+        }
       }
     }
     return mDisparity;
