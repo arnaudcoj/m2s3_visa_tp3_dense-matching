@@ -33,10 +33,9 @@ using namespace cv;
 ///
 /// @param psLeftImage: image gauche
 /// @param psRightImage: image droite
-/// @param psLeftDisparity: carte des disparites calculee
 /// @param iMaxDisparity: disparite maximale recherchee
 /// @param iWindowHalfSize: demi-taille de la fenetre de correlation
-/// @return rien
+/// @return carte des disparites calculee
 // -----------------------------------------------------------------------
 Mat iviLeftDisparityMap(const Mat& mLeftGray,
                         const Mat& mRightGray,
@@ -138,10 +137,9 @@ Mat iviComputeLeftSSDCost(const Mat& mLeftGray,
 ///
 /// @param psLeftImage: image gauche
 /// @param psRightImage: image droite
-/// @param psRightDisparity: carte des disparites calculee
 /// @param iMaxDisparity: disparite maximale recherchee
 /// @param iWindowHalfSize: demi-taille de la fenetre de correlation
-/// @return rien
+/// @return carte des disparites calculee
 // -----------------------------------------------------------------------
 Mat iviRightDisparityMap(const Mat& mLeftGray,
                          const Mat& mRightGray,
@@ -209,10 +207,9 @@ int iShift, iRow, iCol;
 ///
 /// @param psLeftImage: image gauche
 /// @param psRightImage: image droite
-/// @param psSSD: somme des differences au carre (double 64bits)
 /// @param iShift: decalage teste
 /// @param iWindowHalfSize: demi-taille de la fenetre de correlation
-/// @return rien
+/// @return somme des differences au carre (double 64bits)
 // -----------------------------------------------------------------------
 Mat iviComputeRightSSDCost(const Mat& mLeftGray,
                            const Mat& mRightGray,
@@ -238,13 +235,12 @@ Mat iviComputeRightSSDCost(const Mat& mLeftGray,
 }
 
 // -----------------------------------------------------------------------
-/// \brief Verifie la coherence des cartes gauche et froite.
+/// \brief Verifie la coherence des cartes gauche et droite.
 ///
 /// @param psLeftDisparity: carte gauche des disparites
 /// @param psRightDisparity: carte droite des disparites
-/// @param psDisparity: carte des disparites fusionnee
 /// @param psValidityMask: carte des disparites valides
-/// @return rien
+/// @return carte des disparites fusionnee
 // -----------------------------------------------------------------------
 Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
                             const Mat& mRightDisparity,

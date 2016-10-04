@@ -106,10 +106,21 @@ Cette étape consiste à calculer l'image intermédiaire minSSD. Cette matrice e
 Chaque élément de cette matrice se verra assigner la valeur $dMinSSD = (2 * iWindowHalfSize + 12 * iWindowHalfSize + 1)^2 * 512.0$, qui correspond au maximum possible de SSD (sum of squared differences).
 
 \begin{lstlisting}
+// -----------------------------------------------------------------------
+/// \brief Estime la disparite par minimisation du SSD, image gauchee
+/// prise comme reference.
+///
+/// @param psLeftImage: image gauche
+/// @param psRightImage: image droite
+/// @param iMaxDisparity: disparite maximale recherchee
+/// @param iWindowHalfSize: demi-taille de la fenetre de correlation
+/// @return carte des disparites calculee
+// -----------------------------------------------------------------------
 Mat iviLeftDisparityMap(const Mat& mLeftGray,
-                        const Mat& mRightGray,
-                        int iMaxDisparity,
-                        int iWindowHalfSize) {
+                      const Mat& mRightGray,
+                      int iMaxDisparity,
+                      int iWindowHalfSize) {
+
   [...]
 
   Mat mMinSSD(mLeftGray.size(), CV_64F);
@@ -147,6 +158,7 @@ Le but est de calculer la SSD minimale de chaque point en se servant des pixels 
 La SSD est calculée dans iviComputeLeftSSDCost, méthode que nous implémenterons dans la sous-partie suivante.
 
 \begin{lstlisting}
+/// [...]
 Mat iviLeftDisparityMap(const Mat& mLeftGray,
                         const Mat& mRightGray,
                         int iMaxDisparity,
@@ -197,9 +209,9 @@ Mat iviLeftDisparityMap(const Mat& mLeftGray,
 \subsection{Calcul de la SSD pour l'image gauche}
 
 \subsubsection{Explications}
-Pour calculer la SSD, nous allons utiliser cette formule, trouvée dans le cours :
+Pour calculer une SSD pour l'image de gauche, nous allons utiliser cette formule, trouvée dans le cours :
 \begin{equation}
-\sum_{i=-w_x}^{w_x} \sum_{i=-w_y}^{w_y} (I_l(x_l+i,y+j)-I_r(x_l+1-s,y+j))^2
+\sum_{i=-w_x}^{w_x} \sum_{i=-w_y}^{w_y} (I_l(x_l+i,y+j)-I_r(x_l+i-s,y+j))^2
 \end{equation}
 
 \subsubsection{Implémentation C++}
@@ -238,14 +250,219 @@ Mat iviComputeLeftSSDCost(const Mat& mLeftGray,
 }
 \end{lstlisting}
 
+\subsubsection{Résultats}
+
 L'éxecution du programme nous donne comme résultat l'image de disparité suivante :
 \begin{figure}[h]
 \begin{center}
-	\includegraphics[width=200px]{left-disparity.png}
+	\includegraphics[width=200px]{left-disparity_resampled.png}
 \end{center}
-\caption{Image de disparité gauche}
+\caption{Carte de disparité gauche}
 \end{figure}
 On retrouve certaines formes présente dans l'image source, telles que la lampe et le visage. Pour faire une analyse plus poussée, nous allons générer une carte de disparités similaires, mais cette fois-ci pour l'image de droite.
+
+\clearpage
+%----------------------------------------------------------------------------------------
+%	VÉRIFICATION GAUCHE-DROITE
+%----------------------------------------------------------------------------------------
+
+\section{Vérification gauche-droite}
+
+On a besoin des cartes de disparité des 2 images pour reconstituer l'information de profondeur. Donc on va reproduire la même procédure mais pour l'image de droite.
+
+\subsection{Calcul de la SSD pour l'image droite}
+
+\subsubsection{Explications}
+Nous allons reprendre les mêmes calculs, à quelques subtilités près : on échange les matrices droites et gauche, et on additionne le décalage s au lieu de le soustraire.
+\begin{equation}
+\sum_{i=-w_x}^{w_x} \sum_{i=-w_y}^{w_y} (I_r(x_r+i,y+j)-I_l(x_r+i+s,y+j))^2
+\end{equation}
+
+\subsubsection{Implémentation C++}
+
+\begin{lstlisting}
+// -----------------------------------------------------------------------
+/// \brief Estime la disparite par minimisation du SSD, image droite
+/// prise comme reference.
+///
+/// @param psLeftImage: image gauche
+/// @param psRightImage: image droite
+/// @param iMaxDisparity: disparite maximale recherchee
+/// @param iWindowHalfSize: demi-taille de la fenetre de correlation
+/// @return carte des disparites calculee
+// -----------------------------------------------------------------------
+Mat iviRightDisparityMap(const Mat& mLeftGray,
+                         const Mat& mRightGray,
+                         int iMaxDisparity,
+                         int iWindowHalfSize) {
+Mat mSSD(mRightGray.size(), CV_64F);
+Mat mMinSSD(mRightGray.size(), CV_64F);
+Mat mRightDisparityMap(mRightGray.size(), CV_8U);// Images pour les resultats intermediaires
+double dMinSSD, *pdPtr1, *pdPtr2;
+unsigned char *pucDisparity;
+int iShift, iRow, iCol;
+
+    // Initialisation de l'image du minimum de SSD
+    dMinSSD = pow((double)(2 * iWindowHalfSize + 1), 2.0) * 512.0;
+    for (iRow = iWindowHalfSize;
+        iRow < mMinSSD.size().height - iWindowHalfSize;
+        iRow++) {
+        // Pointeur sur le debut de la ligne
+        pdPtr1 = mMinSSD.ptr<double>(iRow);
+        // Sauter la demi fenetre non utilisee
+        pdPtr1 += iWindowHalfSize;
+        // Remplir le reste de la ligne
+        for (iCol = iWindowHalfSize;
+            iCol < mMinSSD.size().width - iWindowHalfSize;
+            iCol++)
+                *pdPtr1++ = dMinSSD;
+    }
+    // Boucler pour tous les decalages possibles
+    for (iShift = 0; iShift < iMaxDisparity; iShift++) {
+        // Calculer le cout SSD pour ce decalage
+        mSSD = iviComputeRightSSDCost(mLeftGray, mRightGray,
+                                     iShift, iWindowHalfSize);
+        // Mettre a jour les valeurs minimales
+        for (iRow = iWindowHalfSize;
+            iRow < mMinSSD.size().height - iWindowHalfSize;
+            iRow++) {
+            // Pointeurs vers les debuts des lignes
+            pdPtr1 = mMinSSD.ptr<double>(iRow);
+            pdPtr2 = mSSD.ptr<double>(iRow);
+            pucDisparity = mRightDisparityMap.ptr<unsigned char>(iRow);
+            // Sauter la demi fenetre non utilisee
+            pdPtr1 += iWindowHalfSize;
+            pdPtr2 += iWindowHalfSize;
+            pucDisparity += iWindowHalfSize;
+            // Comparer sur le reste de la ligne
+            for (iCol = iWindowHalfSize;
+                iCol < mMinSSD.size().width - iWindowHalfSize;
+                iCol++) {
+                // SSD plus faible que le minimum precedent
+                if (*pdPtr1 > *pdPtr2) {
+                    *pucDisparity = (unsigned char)iShift;
+                    *pdPtr1 = *pdPtr2;
+                }
+                // Pixels suivants
+                pdPtr1++; pdPtr2++; pucDisparity++;
+            }
+        }
+    }
+    return mRightDisparityMap;
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+// -----------------------------------------------------------------------
+/// \brief Calcule la somme des differences aux carre, image droite
+/// prise comme reference.
+///
+/// @param psLeftImage: image gauche
+/// @param psRightImage: image droite
+/// @param iShift: decalage teste
+/// @param iWindowHalfSize: demi-taille de la fenetre de correlation
+/// @return somme des differences au carre (double 64bits)
+// -----------------------------------------------------------------------
+Mat iviComputeRightSSDCost(const Mat& mLeftGray,
+                           const Mat& mRightGray,
+                           int iShift,
+                           int iWindowHalfSize) {
+    Mat mRightSSDCost(mLeftGray.size(), CV_64F);
+
+    for(int x = 0; x < mRightGray.cols - iWindowHalfSize; x++) {
+      for(int y = 0; y < mRightGray.rows - iWindowHalfSize; y++) {
+        double diff_sum = 0.;
+
+        for(int i = -iWindowHalfSize; i < iWindowHalfSize; i++) {
+          for(int j = -iWindowHalfSize; j < iWindowHalfSize; j++) {
+            double diff = ((double) mRightGray.at<unsigned char>(y + j, x + i) - (double) mLeftGray.at<unsigned char>(y + j, x + i + iShift));
+            diff_sum += pow(diff, 2.);
+          }
+        }
+        mRightSSDCost.at<double>(y, x) = diff_sum;
+
+      }
+    }
+    return mRightSSDCost;
+}
+\end{lstlisting}
+
+\subsubsection{Résultats}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics[width=200px]{right-disparity_resampled.png}
+\end{center}
+\caption{Carte de disparité droite}
+\end{figure}
+
+\clearpage
+%----------------------------------------------------------------------------------------
+%	COHÉRENCE GAUCHE-DROITE
+%----------------------------------------------------------------------------------------
+\section{Cohérence gauche-droite}
+
+\subsection{Explications}
+\begin{equation}
+  d_r(x,y) = d_l(x+d_r(x,y),y)
+\end{equation}
+\begin{equation}
+  d_l(x,y) = d_r(x-d_l(x,y),y)
+\end{equation}
+
+\subsection{Implémentation C++}
+
+\begin{lstlisting}
+// -----------------------------------------------------------------------
+/// \brief Verifie la coherence des cartes gauche et droite.
+///
+/// @param psLeftDisparity: carte gauche des disparites
+/// @param psRightDisparity: carte droite des disparites
+/// @param psValidityMask: carte des disparites valides
+/// @return carte des disparites fusionnee
+// -----------------------------------------------------------------------
+Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
+                            const Mat& mRightDisparity,
+                            Mat& mValidityMask) {
+
+    Mat mDisparity(mLeftDisparity.size(), CV_8U);
+
+    for(int x = 0; x < mLeftDisparity.cols; x++) {
+      for (int y = 0; y < mLeftDisparity.rows; y++) {
+        double dl = (double) mLeftDisparity.at<unsigned char>(y, x);
+        double dr = (double) mRightDisparity.at<unsigned char>(y, x);
+
+        double dlStep = (double) mLeftDisparity.at<unsigned char>(y, x + dr);
+        double drStep = (double) mRightDisparity.at<unsigned char>(y, x - dl);
+
+        if(dl == drStep && dr == dlStep) {
+          mValidityMask.at<unsigned char>(y, x) = 0;
+          mDisparity.at<unsigned char>(y, x) = (double) mLeftDisparity.at<unsigned char>(y, x);
+        } else {
+          mValidityMask.at<unsigned char>(y, x) = 255;
+          mDisparity.at<unsigned char>(y,x) = 0;
+        }
+      }
+    }
+    return mDisparity;
+}
+\end{lstlisting}
+
+\subsection{Résultats}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics[width=200px]{validity-mask.png}
+\end{center}
+\caption{Carte de validité}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics[width=200px]{disparity_resampled.png}
+\end{center}
+\caption{Carte de disparité}
+\end{figure}
 
 \clearpage
 %----------------------------------------------------------------------------------------
