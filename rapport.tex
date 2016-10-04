@@ -257,7 +257,7 @@ L'éxecution du programme nous donne comme résultat l'image de disparité suiva
 \begin{center}
 	\includegraphics[width=200px]{left-disparity_resampled.png}
 \end{center}
-\caption{Carte de disparité gauche}
+\caption{Carte de disparité gauche -- ré-échantillonnée}
 \end{figure}
 On retrouve certaines formes présente dans l'image source, telles que la lampe et le visage. Pour faire une analyse plus poussée, nous allons générer une carte de disparités similaires, mais cette fois-ci pour l'image de droite.
 
@@ -393,7 +393,7 @@ Mat iviComputeRightSSDCost(const Mat& mLeftGray,
 \begin{center}
 	\includegraphics[width=200px]{right-disparity_resampled.png}
 \end{center}
-\caption{Carte de disparité droite}
+\caption{Carte de disparité droite -- ré-échantillonnée}
 \end{figure}
 
 \clearpage
@@ -461,7 +461,7 @@ Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
 \begin{center}
 	\includegraphics[width=200px]{disparity_resampled.png}
 \end{center}
-\caption{Carte de disparité}
+\caption{Carte de disparité -- ré-échantillonnée}
 \end{figure}
 
 \clearpage
@@ -477,5 +477,33 @@ Mat iviLeftRightConsistency(const Mat& mLeftDisparity,
 %----------------------------------------------------------------------------------------
 
 \section{Annexe}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics{left-disparity.png}
+\end{center}
+\caption{Carte de disparité gauche}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics{right-disparity.png}
+\end{center}
+\caption{Carte de disparité droite}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics{validity-mask.png}
+\end{center}
+\caption{Carte de validité}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+	\includegraphics{disparity.png}
+\end{center}
+\caption{Carte de disparité}
+\end{figure}
 
 \end{document}
